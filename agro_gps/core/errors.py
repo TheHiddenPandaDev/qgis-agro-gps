@@ -61,7 +61,7 @@ def error_from_response(response: HttpResponse) -> AgroGpsError:
     code, message = _envelope(response)
     status = response.status
     if status == HTTP_UNAUTHORIZED:
-        fallback = "The key is not valid. Create one in Agro GPS > Settings > Integrations."
+        fallback = "The key is not valid. Create one in Agro GPS > Settings > API and webhooks."
         return AuthError(message or fallback, code, status)
     if status == HTTP_FORBIDDEN and code == "AUT_004":
         return ReadOnlyKeyError(message or "This key is read-only; create a key with write access.", code, status)

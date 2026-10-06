@@ -16,7 +16,7 @@ A satellite basemap (Esri World Imagery) is added only when the project has none
 
 ## Your key
 
-Loading and sending fields uses the Agro GPS web API (`https://api.agrogps.eu`), an external service run by The Hidden Panda. Create a key in the Agro GPS app: **Settings > Integrations**. A read key loads fields; a write key also sends polygons. The key is stored in your QGIS profile and only sent to `api.agrogps.eu`.
+Loading and sending fields uses the Agro GPS web API (`https://api.agrogps.eu`), an external service run by The Hidden Panda. Create a key in the Agro GPS app: **Settings > API and webhooks**. A read key loads fields; a write key also sends polygons. The key is stored in your QGIS profile and only sent to `api.agrogps.eu`.
 
 ## Develop
 

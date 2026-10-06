@@ -56,7 +56,7 @@ class AgroGpsDock(QDockWidget):
         form = QFormLayout(box)
         self.credential_edit = QLineEdit(load_credential())
         self.credential_edit.setEchoMode(QLineEdit.EchoMode.Password)
-        self.credential_edit.setPlaceholderText(tr("Paste the key from Agro GPS > Settings > Integrations"))
+        self.credential_edit.setPlaceholderText(tr("Paste the key from Agro GPS > Settings > API and webhooks"))
         save = QPushButton(tr("Save key"))
         save.clicked.connect(self.save_key)
         row = QHBoxLayout()

@@ -1,9 +1,7 @@
 == bandit bandit 1.9.4
 	No issues identified.
-	Total issues (by severity):
-	Total issues (by confidence):
 == detect-secrets 1.5.0
 results: {}
 == flake8 7.4.1
-flake8 clean (max-line-length 120)
-default-config findings: 100
+Darwin --max-line-length 120
+no findings
