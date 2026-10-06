@@ -26,7 +26,7 @@ python -m venv .venv && .venv/bin/pip install pytest pytest-cov
 python scripts/build_zip.py             # dist/agro_gps-<version>.zip
 ```
 
-Headless check inside QGIS (renders `docs/empty-project.png`, `docs/map.png` and `docs/panel.png`, calls the live SIGPAC service):
+Headless check inside QGIS (renders `docs/empty-project.png`, `docs/fields-framed.png`, `docs/map.png` and `docs/panel.png`, calls the live SIGPAC service):
 
 ```
 QT_QPA_PLATFORM=offscreen <qgis python> scripts/qgis_smoke.py

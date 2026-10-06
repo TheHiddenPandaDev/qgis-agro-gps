@@ -3,14 +3,15 @@ name=Agro GPS – farm fields and SIGPAC parcels
 qgisMinimumVersion=3.34
 qgisMaximumVersion=4.99
 description=Load the fields of your Agro GPS farm notebook as a styled layer, look up Spanish SIGPAC parcels on the map, and send polygons you draw in QGIS back to your notebook as new fields.
-version=0.1.1
+version=0.1.2
 author=The Hidden Panda
 email=dani@agrogps.eu
 about=Agro GPS is a digital farm notebook (fields, treatments, fertilisation, harvest) ready for the EU electronic plant-protection record. This plugin connects QGIS to it: load the fields of your farm with their crop and area as a polygon layer, click on the map to add the Spanish SIGPAC agricultural parcel at that point (public SIGPAC service of the Spanish Ministry of Agriculture, no key needed), and send selected polygons from any layer to your notebook as new fields. Loading and sending fields uses the Agro GPS web API, an external service run by The Hidden Panda: you need an Agro GPS account and a key created in the app (Settings > API and webhooks); a read key loads fields, a write key also sends them. The SIGPAC lookup works without an account. A satellite basemap (Esri World Imagery) is added only when the project has none. No extra Python packages are needed.
 tracker=https://github.com/TheHiddenPandaDev/qgis-agro-gps/issues
 repository=https://github.com/TheHiddenPandaDev/qgis-agro-gps
 homepage=https://agrogps.eu/en/
-changelog=0.1.1 Opening the panel on an empty project now shows the satellite basemap centred on your fields (or on Spain / Europe by language) instead of a blank canvas; saving a key loads your farms, and a single farm is selected automatically.
+changelog=0.1.2 Loading your fields zooms to them; sending polygons picks a sensible name field and the SIGPAC layer you just used, and explains what to select; a Catastro GPS key (or any non-Agro key) is detected with a clear message; "Pick a point" shows a hint, a crosshair cursor and can be cancelled with Esc; Spanish interface when QGIS runs in Spanish, Catalan, Galician or Basque.
+    0.1.1 Opening the panel on an empty project now shows the satellite basemap centred on your fields (or on Spain / Europe by language) instead of a blank canvas; saving a key loads your farms, and a single farm is selected automatically.
     0.1.0 First release: load your Agro GPS fields as a layer, look up SIGPAC parcels by clicking or by coordinates, send selected polygons to your notebook; QGIS 3.34 to 4.x.
 tags=agriculture,farm,field,parcel,sigpac,lpis,crop,plant protection,notebook,spain,europe,api
 category=Web

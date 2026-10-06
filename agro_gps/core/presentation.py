@@ -30,6 +30,7 @@ BASEMAP_LAYER_KINDS = frozenset({"raster", "vectortile"})
 SPAIN_EXTENT = (-9.6, 35.9, 4.4, 43.9)
 EUROPE_EXTENT = (-10.5, 36.0, 28.0, 60.0)
 SPANISH_LANGUAGES = frozenset({"es", "ca", "gl", "eu"})
+NAME_FIELD_CANDIDATES = ("name", "nombre", "reference", "referencia", "refcat", "sigpac", "label", "ref")
 
 
 @dataclass(frozen=True)
@@ -105,3 +106,26 @@ def farm_to_select(farm_ids: list[str], remembered: str) -> int:
 
 def farm_is_settled(farm_ids: list[str], remembered: str) -> bool:
     return remembered in farm_ids or len(farm_ids) == 1
+
+
+def fields_extent(rings_per_field: Iterable[Iterable[Iterable[tuple[float, float]]]]
+                  ) -> tuple[float, float, float, float] | None:
+    xs: list[float] = []
+    ys: list[float] = []
+    for rings in rings_per_field:
+        for ring in rings:
+            for x, y in ring:
+                xs.append(x)
+                ys.append(y)
+    if not xs:
+        return None
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def default_name_field(field_names: Iterable[str]) -> str:
+    names = list(field_names)
+    by_lower = {name.lower(): name for name in names}
+    for candidate in NAME_FIELD_CANDIDATES:
+        if candidate in by_lower:
+            return by_lower[candidate]
+    return ""

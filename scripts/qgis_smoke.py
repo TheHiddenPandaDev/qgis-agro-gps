@@ -18,8 +18,8 @@ from qgis.core import (
     QgsRectangle,
     QgsVectorLayer,
 )
-from qgis.PyQt.QtCore import QSize
-from qgis.PyQt.QtGui import QColor
+from qgis.PyQt.QtCore import QEvent, QSize, Qt
+from qgis.PyQt.QtGui import QColor, QKeyEvent
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -79,12 +79,37 @@ def main() -> int:
     count = layers.replace_fields(field_layer, fields_from_records(records))
     assert count == len(NEIGHBOURS), count
     assert layers.fields_layer(project) is field_layer
+    dock = plugin.dock
+    canvas = iface.mapCanvas()
+    canvas.setExtent(QgsRectangle(-1_100_000, 4_200_000, 400_000, 5_000_000))
+    dock._frame_fields(project, fields_from_records(records))
+    framed = canvas.extent()
+    assert framed.width() < 5_000 and framed.height() < 5_000, framed
+    fields_png = OUT / "fields-framed.png"
+    render([field_layer] + [l for l in project.mapLayers().values() if l.customProperty(layers.BASEMAP_MARKER)],
+           framed, fields_png)
+
+    dock.credential_edit.setText("pk_live_0123456789abcdef")
+    assert "Catastro GPS" in dock._key_hint(), dock._key_hint()
+    dock.credential_edit.setText("agk_0123")
+    assert dock._key_hint() == ""
+
+    dock.start_pick()
+    assert canvas.mapTool() is dock.map_tool
+    assert canvas.cursor().shape() == Qt.CursorShape.CrossCursor, canvas.cursor().shape()
+    dock.map_tool.keyPressEvent(QKeyEvent(QEvent.Type.KeyPress, Qt.Key.Key_Escape, Qt.KeyboardModifier.NoModifier))
+    assert canvas.mapTool() is not dock.map_tool
+    assert dock.pick_hint is None
 
     feature = sigpac_parcel_at(qgis_transport, 41.6, -4.0)
     parcel = sigpac_from_feature(feature)
     assert parcel is not None and parcel.reference, parcel
     sigpac = layers.sigpac_layer(project)
     added = layers.add_sigpac(sigpac, parcel)
+    sigpac.selectByIds([added.id()])
+    dock._use_layer(sigpac)
+    assert dock.layer_combo.currentLayer() is sigpac
+    assert dock.name_combo.currentField() == "name", dock.name_combo.currentField()
     basemap = layers.owned_layer(project, layers.BASEMAP_MARKER)
     assert basemap is not None and basemap.isValid()
     assert layers.ensure_basemap(project) is None
