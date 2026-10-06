@@ -195,6 +195,18 @@ def frame(project: QgsProject, canvas, extent_wgs84: QgsRectangle) -> QgsRectang
     return rectangle
 
 
+def is_empty(project: QgsProject) -> bool:
+    return not project.mapLayers()
+
+
+def prepare_empty_project(project: QgsProject, canvas, extent_wgs84: QgsRectangle) -> bool:
+    if not is_empty(project):
+        return False
+    ensure_basemap(project)
+    frame(project, canvas, extent_wgs84)
+    return True
+
+
 def outer_ring_lon_lat(geometry: QgsGeometry, source_crs: QgsCoordinateReferenceSystem,
                        project: QgsProject) -> list[tuple[float, float]]:
     geometry = QgsGeometry(geometry)
@@ -210,4 +222,7 @@ def outer_ring_lon_lat(geometry: QgsGeometry, source_crs: QgsCoordinateReference
 
 
 def owned_layer(project: QgsProject, marker: str) -> QgsMapLayer | None:
-    return _owned(project, marker)
+    for layer in project.mapLayers().values():
+        if layer.customProperty(marker):
+            return layer
+    return None

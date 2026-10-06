@@ -1,7 +1,6 @@
-== bandit bandit 1.9.4
+== bandit 1.9.4
 	No issues identified.
 == detect-secrets 1.5.0
 results: {}
-== flake8 7.4.1
-Darwin --max-line-length 120
+== flake8 7.4.1 --max-line-length 120
 no findings

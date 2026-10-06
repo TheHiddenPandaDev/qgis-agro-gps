@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import tempfile
 from pathlib import Path
 
 from qgis.core import (
@@ -14,6 +15,7 @@ from qgis.core import (
     QgsMapSettings,
     QgsPointXY,
     QgsProject,
+    QgsRectangle,
     QgsVectorLayer,
 )
 from qgis.PyQt.QtCore import QSize
@@ -40,7 +42,8 @@ def render(layers, extent, path: Path) -> None:
 
 
 def main() -> int:
-    app = QgsApplication([], True)
+    profile = tempfile.mkdtemp(prefix="agro_gps_smoke_")
+    app = QgsApplication([], True, profile)
     app.initQgis()
     from qgis.testing.mocked import get_iface
 
@@ -53,9 +56,20 @@ def main() -> int:
     iface = get_iface()
     plugin = classFactory(iface)
     plugin.initGui()
+    project = QgsProject.instance()
+    assert not project.mapLayers()
     plugin.action.setChecked(True)
     assert plugin.dock is not None
-    project = QgsProject.instance()
+    opened = list(project.mapLayers().values())
+    assert len(opened) == 1 and opened[0].customProperty(layers.BASEMAP_MARKER), opened
+    assert project.crs().authid() == "EPSG:3857"
+    empty_extent = iface.mapCanvas().extent()
+    assert empty_extent.width() > 1_000_000, empty_extent
+    from agro_gps.core.presentation import start_extent
+    spain = layers.frame(project, None, QgsRectangle(*start_extent("es_ES")))
+    render(opened, spain, OUT / "empty-project.png")
+    plugin.dock.prepare_view()
+    assert len(project.mapLayers()) == 1
 
     neighbours = [sigpac_from_feature(sigpac_parcel_at(qgis_transport, lat, lon)) for lat, lon in NEIGHBOURS]
     records = [{"kind": "parcel", "id": f"DRAWN-{i}", "payload": {
@@ -71,9 +85,10 @@ def main() -> int:
     assert parcel is not None and parcel.reference, parcel
     sigpac = layers.sigpac_layer(project)
     added = layers.add_sigpac(sigpac, parcel)
-    basemap = layers.ensure_basemap(project)
+    basemap = layers.owned_layer(project, layers.BASEMAP_MARKER)
     assert basemap is not None and basemap.isValid()
     assert layers.ensure_basemap(project) is None
+    assert not layers.prepare_empty_project(project, None, added.geometry().boundingBox())
 
     extent = layers.frame(project, None, added.geometry().boundingBox().buffered(0.004))
     render([field_layer, sigpac, basemap], extent, OUT / "map.png")

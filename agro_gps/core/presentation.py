@@ -27,6 +27,9 @@ SATELLITE_ATTRIBUTION = "Esri, Maxar, Earthstar Geographics"
 SATELLITE_MAX_ZOOM = 19
 BASEMAP_PROVIDERS = frozenset({"wms", "xyz", "arcgismapserver", "arcgisimageserver", "wcs", "mbtilesvectortiles"})
 BASEMAP_LAYER_KINDS = frozenset({"raster", "vectortile"})
+SPAIN_EXTENT = (-9.6, 35.9, 4.4, 43.9)
+EUROPE_EXTENT = (-10.5, 36.0, 28.0, 60.0)
+SPANISH_LANGUAGES = frozenset({"es", "ca", "gl", "eu"})
 
 
 @dataclass(frozen=True)
@@ -87,3 +90,18 @@ def outline_properties(color: str) -> list[dict[str, str]]:
         {"line_color": rgba(color, 255), "line_width": str(OUTLINE_WIDTH_MM), "line_width_unit": "MM",
          "joinstyle": "round"},
     ]
+
+
+def start_extent(locale: str) -> tuple[float, float, float, float]:
+    language = (locale or "").replace("-", "_").split("_")[0].lower()
+    return SPAIN_EXTENT if language in SPANISH_LANGUAGES else EUROPE_EXTENT
+
+
+def farm_to_select(farm_ids: list[str], remembered: str) -> int:
+    if remembered in farm_ids:
+        return farm_ids.index(remembered)
+    return 0 if farm_ids else -1
+
+
+def farm_is_settled(farm_ids: list[str], remembered: str) -> bool:
+    return remembered in farm_ids or len(farm_ids) == 1

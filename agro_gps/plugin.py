@@ -44,6 +44,8 @@ class AgroGpsPlugin:
             self.iface.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.dock)
             self.dock.visibilityChanged.connect(self._sync_action)
         self.dock.setVisible(visible)
+        if visible:
+            self.dock.prepare_view()
 
     def _sync_action(self, visible: bool) -> None:
         if self.action is not None and self.action.isChecked() != visible:

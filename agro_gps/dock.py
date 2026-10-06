@@ -1,8 +1,16 @@
 from __future__ import annotations
 
-from qgis.core import Qgis, QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsMapLayerProxyModel, QgsProject
+from qgis.core import (
+    Qgis,
+    QgsCoordinateReferenceSystem,
+    QgsCoordinateTransform,
+    QgsMapLayerProxyModel,
+    QgsProject,
+    QgsRectangle,
+    QgsSettings,
+)
 from qgis.gui import QgsFieldComboBox, QgsMapLayerComboBox, QgsMapToolEmitPoint
-from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtCore import QLocale, Qt
 from qgis.PyQt.QtWidgets import (
     QComboBox,
     QDockWidget,
@@ -21,7 +29,7 @@ from .core.client import AgroGpsClient, sigpac_parcel_at
 from .core.errors import AgroGpsError
 from .core.export import field_payload
 from .core.parsing import fields_from_records, sigpac_from_feature
-from .core.presentation import format_area
+from .core.presentation import farm_is_settled, farm_to_select, format_area, start_extent
 from .i18n import tr
 from .qgis_transport import qgis_transport
 from .settings_store import load_country, load_credential, load_farm, save_country, save_credential, save_farm
@@ -29,6 +37,8 @@ from .settings_store import load_country, load_credential, load_farm, save_count
 KEYS_HELP_URL = "https://agrogps.eu/en/developers/"
 WGS84 = "EPSG:4326"
 NAME_FIELD = "name"
+LOCALE_SETTING = "locale/userLocale"
+QUICK_TIMEOUT_SECONDS = 6.0
 
 
 class AgroGpsDock(QDockWidget):
@@ -125,8 +135,33 @@ class AgroGpsDock(QDockWidget):
         if layer is not None and layer.fields().indexOf(NAME_FIELD) >= 0:
             self.name_combo.setField(NAME_FIELD)
 
-    def _client(self) -> AgroGpsClient:
-        return AgroGpsClient(self.credential_edit.text(), transport=qgis_transport)
+    def _client(self, timeout: float | None = None) -> AgroGpsClient:
+        if timeout is None:
+            return AgroGpsClient(self.credential_edit.text(), transport=qgis_transport)
+        return AgroGpsClient(self.credential_edit.text(), transport=qgis_transport, timeout=timeout)
+
+    def prepare_view(self) -> None:
+        project = QgsProject.instance()
+        if not layers.is_empty(project):
+            return
+        if self.credential_edit.text().strip() and load_farm() and self._load_fields_quietly(project):
+            return
+        locale = str(QgsSettings().value(LOCALE_SETTING, "") or QLocale().name())
+        layers.prepare_empty_project(project, self.iface.mapCanvas(), QgsRectangle(*start_extent(locale)))
+
+    def _load_fields_quietly(self, project: QgsProject) -> bool:
+        try:
+            records = self._client(QUICK_TIMEOUT_SECONDS).parcel_records(load_farm())
+        except AgroGpsError:
+            return False
+        fields = fields_from_records(records)
+        if not fields:
+            return False
+        layer = layers.fields_layer(project)
+        layers.replace_fields(layer, fields)
+        layers.ensure_basemap(project)
+        layers.frame(project, self.iface.mapCanvas(), layer.extent())
+        return True
 
     def _report(self, message: str, level=Qgis.MessageLevel.Info) -> None:
         self.status.setText(message)
@@ -138,6 +173,8 @@ class AgroGpsDock(QDockWidget):
     def save_key(self) -> None:
         save_credential(self.credential_edit.text())
         self._report(tr("Key saved in your QGIS profile."))
+        if self.credential_edit.text().strip():
+            self.load_farms()
 
     def load_farms(self) -> None:
         try:
@@ -148,9 +185,11 @@ class AgroGpsDock(QDockWidget):
         self.farm_combo.clear()
         for farm in farms:
             self.farm_combo.addItem(f'{farm.get("name") or farm["id"]} ({farm.get("country") or ""})', farm["id"])
-        remembered = self.farm_combo.findData(load_farm())
-        if remembered >= 0:
-            self.farm_combo.setCurrentIndex(remembered)
+        farm_ids = [farm["id"] for farm in farms]
+        selected = farm_to_select(farm_ids, load_farm())
+        self.farm_combo.setCurrentIndex(selected)
+        if farm_is_settled(farm_ids, load_farm()):
+            save_farm(farm_ids[selected])
         self._report(tr("{n} farms.").format(n=len(farms)))
 
     def _farm_id(self) -> str:

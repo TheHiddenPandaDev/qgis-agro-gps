@@ -6,7 +6,11 @@ from agro_gps.core.errors import ValidationError
 from agro_gps.core.export import QGIS_ID_PREFIX, field_payload
 from agro_gps.core.parsing import field_from_record, fields_from_records, sigpac_from_feature, sigpac_reference
 from agro_gps.core.presentation import (
+    EUROPE_EXTENT,
+    SPAIN_EXTENT,
     LayerInfo,
+    farm_is_settled,
+    farm_to_select,
     fill_properties,
     format_area,
     has_basemap,
@@ -16,6 +20,7 @@ from agro_gps.core.presentation import (
     padded_extent,
     rgba,
     satellite_uri,
+    start_extent,
 )
 
 SQUARE = [[40.0, -3.0], [40.0, -2.99], [40.01, -2.99], [40.01, -3.0]]
@@ -92,3 +97,31 @@ def test_presentation_helpers():
     assert padded_extent(0, 0, 0, 0, 5) == (-5, -5, 5, 5)
     assert is_basemap(LayerInfo("raster", "gdal")) and is_basemap(LayerInfo("vector", "WMS"))
     assert not has_basemap([LayerInfo("vector", "memory")])
+
+
+@pytest.mark.parametrize("locale, expected", [
+    ("es_ES", SPAIN_EXTENT), ("es", SPAIN_EXTENT), ("ca-ES", SPAIN_EXTENT), ("gl_ES", SPAIN_EXTENT),
+    ("eu", SPAIN_EXTENT), ("de_DE", EUROPE_EXTENT), ("en_US", EUROPE_EXTENT), ("", EUROPE_EXTENT),
+    (None, EUROPE_EXTENT),
+])
+def test_start_extent_by_locale(locale, expected):
+    assert start_extent(locale) == expected
+
+
+def test_spain_extent_covers_mainland_and_balearics():
+    x_min, y_min, x_max, y_max = SPAIN_EXTENT
+    for lon, lat in ((-3.70, 40.42), (2.65, 39.57), (-9.30, 42.88), (4.30, 39.90), (-5.60, 36.01)):
+        assert x_min <= lon <= x_max and y_min <= lat <= y_max
+
+
+@pytest.mark.parametrize("ids, remembered, index, settled", [
+    (["a"], "", 0, True),
+    (["a", "b"], "", 0, False),
+    (["a", "b"], "b", 1, True),
+    (["a", "b"], "gone", 0, False),
+    ([], "", -1, False),
+    ([], "a", -1, False),
+])
+def test_farm_selection(ids, remembered, index, settled):
+    assert farm_to_select(ids, remembered) == index
+    assert farm_is_settled(ids, remembered) is settled
